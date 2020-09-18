@@ -1,0 +1,14 @@
+.appsidebar-search {
+  display: flex;
+}
+
+.appsidebar-cont {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.appsidebar-nav-cont {
+  flex: 1;
+  overflow: auto;
+}
