@@ -4,8 +4,15 @@ import "./index.css";
 import App from "./App";
 import * as serviceWorker from "./serviceWorker";
 
-ReactDOM.render(<App />, document.getElementById("root"));
-if(window.gmapReady) {
+ReactDOM.render(
+  <App
+    ref={(component) => {
+      window.app = component;
+    }}
+  />,
+  document.getElementById("root")
+);
+if (window.gmapReady) {
   window.initGMap();
 }
 

@@ -1,5 +1,11 @@
-.appsidebar-search {
+.appsidebar-mainasset {
   display: flex;
+  flex-direction: column;
+}
+
+.appsidebar-subasset-cmdbar {
+  display: flex;
+  justify-content: space-between;
 }
 
 .appsidebar-cont {

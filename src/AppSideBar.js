@@ -1,36 +1,25 @@
 import * as React from "react";
-import {
-  Nav,
-  INavLink,
-  INavStyles,
-  INavLinkGroup,
-} from "office-ui-fabric-react/lib/Nav";
 import { SearchBox } from "office-ui-fabric-react/lib/SearchBox";
+import { IconButton } from "office-ui-fabric-react";
+import { Nav } from "office-ui-fabric-react/lib/Nav";
 import {
-  IconButton,
-  IIconProps,
-  IContextualMenuProps,
-  Stack,
-  Link,
-} from "office-ui-fabric-react";
+  PrimaryButton,
+  DefaultButton,
+} from "office-ui-fabric-react/lib/Button";
+import {
+  CommandBar,
+  ICommandBarItemProps,
+} from "office-ui-fabric-react/lib/CommandBar";
+import { Label } from "office-ui-fabric-react/lib/Label";
+import { Separator } from "office-ui-fabric-react/lib/Separator";
 import "./AppSideBar.css";
 
-const navStyles = {
-  root: {
-    width: 208,
-    height: 350,
-    boxSizing: "border-box",
-    border: "1px solid #eee",
-    overflowY: "auto",
-  },
-};
-
-const navLinkGroups = [
+/* examples */
+let items = [
   {
     links: [
       {
         name: "Home",
-        url: "http://example.com",
         expandAriaLabel: "Expand Home section",
         collapseAriaLabel: "Collapse Home section",
         links: [
@@ -47,214 +36,119 @@ const navLinkGroups = [
             key: "key2",
             target: "_blank",
           },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
-          {
-            name: "Activity",
-            url: "http://msn.com",
-            key: "key1",
-            target: "_blank",
-          },
-          {
-            name: "MSN",
-            url: "http://msn.com",
-            disabled: true,
-            key: "key2",
-            target: "_blank",
-          },
         ],
         isExpanded: true,
+      },
+      {
+        name: "Documents",
+        url: "http://example.com",
+        key: "key3",
+        isExpanded: true,
+        target: "_blank",
+      },
+      {
+        name: "Pages",
+        url: "http://msn.com",
+        key: "key4",
+        target: "_blank",
+      },
+      {
+        name: "Notebook",
+        url: "http://msn.com",
+        key: "key5",
+        disabled: true,
+      },
+      {
+        name: "Communication and Media",
+        url: "http://msn.com",
+        key: "key6",
+        target: "_blank",
+      },
+      {
+        name: "News",
+        url: "http://cnn.com",
+        icon: "News",
+        key: "key7",
+        target: "_blank",
       },
     ],
   },
 ];
 
-// const NavBasicExample = () => {
-//   return (
-//     <Nav
-//       onLinkClick={_onLinkClick}
-//       selectedKey="key3"
-//       ariaLabel="Nav basic example"
-//       styles={navStyles}
-//       groups={navLinkGroups}
-//     />
-//   );
-// };
-
 class AppSideBar extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.onBasicClick = this.onBasicClick.bind(this);
+    this.onLinkClick = this.onLinkClick.bind(this);
+  }
+
   render() {
     return (
-      <div class="appsidebar-cont" style={{width:`${this.props.width}px`}}>
-        <div class="appsidebar-search">
-          <SearchBox
-            styles={{root:{flexGrow: 1}}}
-            placeholder="Search" /*onSearch={newValue => console.log('value is ' + newValue)}*/
+      <div
+        className="appsidebar-cont"
+        style={{ width: `${this.props.width}px` }}
+      >
+        <div className="appsidebar-mainasset">
+          <Label styles={{ root: { textAlign: "center" } }}>
+            {this.props.selectedAssetName}
+          </Label>
+          <DefaultButton
+            text="Open Assets List"
+            onClick={() => this.onBasicClick(this.props.onSelectAsset)}
           />
-          <IconButton
-            iconProps={{ iconName: "FilterSettings" }}
-            title="Sort and filter settings"
-            ariaLabel="Sort and filter settings"
-          />
+          <Separator />
+          <div className="appsidebar-subasset-cmdbar">
+            <div>
+              <IconButton
+                title="New region"
+                iconProps={{ iconName: "Add" }}
+                onClick={() => this.onBasicClick(this.props.onAddSub)}
+                disabled={!this.props.selectedAsset}
+              />
+              <IconButton
+                title="Delete selected region"
+                iconProps={{ iconName: "Remove" }}
+                onClick={() => this.onBasicClick(this.props.onRemoveSub)}
+                disabled={!this.props.selectedSubAsset}
+              />
+            </div>
+            <div>
+              <IconButton
+                title="Clear selection"
+                iconProps={{ iconName: "ClearSelection" }}
+                onClick={() => this.onBasicClick(this.props.onClearSelection)}
+                disabled={!this.props.selectedSubAsset}
+              />
+              <IconButton
+                title="Information about selected region"
+                iconProps={{ iconName: "Info" }}
+                onClick={() => this.onBasicClick(this.props.onSubInfo)}
+                disabled={!this.props.selectedSubAsset}
+              />
+            </div>
+          </div>
+          <Separator />
         </div>
-        <div class="appsidebar-nav-cont">
-          <Nav styles={{root:{overflowY: "auto"}}} groups={navLinkGroups} />
+        <div className="appsidebar-nav-cont">
+          <Nav
+            styles={{ root: { overflowY: "auto" } }}
+            groups={items}
+            onLinkClick={this.onLinkClick}
+          />
         </div>
       </div>
     );
+  }
+
+  onBasicClick(handler) {
+    if (handler) handler();
+  }
+
+  onLinkClick(e, item) {
+    if (this.props.onItemClick) {
+      this.props.onItemClick(item);
+    }
   }
 }
 
