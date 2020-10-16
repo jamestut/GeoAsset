@@ -29,21 +29,29 @@ export class DiscardDialog extends React.Component {
     return (
       <Dialog
         hidden={this.props.hidden}
-        onDismiss={(e)=>this.forwardEvent(this.props.onDismiss)}
+        onDismiss={(e) => this.forwardEvent(this.props.onDismiss)}
         dialogContentProps={discardDialogContentProps}
-        modalProps={{isBlocking:true}}
+        modalProps={{ isBlocking: true }}
       >
         <DialogFooter>
-          <PrimaryButton onClick={(e)=>this.forwardEvent(this.props.onSave)} text="Save" />
-          <DefaultButton onClick={(e)=>this.forwardEvent(this.props.onDiscard)} text="Discard" />
-          <DefaultButton onClick={(e)=>this.forwardEvent(this.props.onDismiss)} text="Cancel" />
+          <PrimaryButton
+            onClick={(e) => this.forwardEvent(this.props.onSave)}
+            text="Save"
+          />
+          <DefaultButton
+            onClick={(e) => this.forwardEvent(this.props.onDiscard)}
+            text="Discard"
+          />
+          <DefaultButton
+            onClick={(e) => this.forwardEvent(this.props.onDismiss)}
+            text="Cancel"
+          />
         </DialogFooter>
       </Dialog>
     );
   }
 
   forwardEvent(handler) {
-    if(handler)
-      handler();
+    if (handler) handler();
   }
 }

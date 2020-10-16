@@ -16,12 +16,20 @@ import {
 import { MarqueeSelection } from "office-ui-fabric-react/lib/MarqueeSelection";
 import { mergeStyleSets } from "office-ui-fabric-react/lib/Styling";
 import { Panel, PanelType } from "office-ui-fabric-react/lib/Panel";
+import {
+  CommandBar,
+  ICommandBarItemProps,
+} from "office-ui-fabric-react/lib/CommandBar";
 
 class AssetsListOverview extends React.Component {
   _selection;
 
   constructor(props) {
     super(props);
+
+    this._propagateSelectionDetails = this._propagateSelectionDetails.bind(
+      this
+    );
 
     const columns = [
       {
@@ -83,19 +91,12 @@ class AssetsListOverview extends React.Component {
     ];
 
     this._selection = new Selection({
-      onSelectionChanged: () => {
-        this.setState({
-          selectionDetails: this._getSelectionDetails(),
-        });
-      },
+      onSelectionChanged: this._propagateSelectionDetails,
     });
 
     this.state = {
       items: this.props.items,
       columns: columns,
-      selectionDetails: this._getSelectionDetails(),
-      isModalSelection: false,
-      isCompactMode: false,
     };
   }
 
@@ -110,6 +111,7 @@ class AssetsListOverview extends React.Component {
         selectionMode={SelectionMode.multiple}
         getKey={this._getKey}
         setKey="none"
+        selection={this._selection}
         layoutMode={DetailsListLayoutMode.justified}
         isHeaderVisible={true}
         onItemInvoked={this._onItemInvoked}
@@ -132,16 +134,9 @@ class AssetsListOverview extends React.Component {
     alert(`Item invoked: ${item.name}`);
   }
 
-  _getSelectionDetails() {
-    const selectionCount = this._selection.getSelectedCount();
-
-    switch (selectionCount) {
-      case 0:
-        return "No items selected";
-      case 1:
-        return "1 item selected: " + this._selection.getSelection()[0].name;
-      default:
-        return `${selectionCount} items selected`;
+  _propagateSelectionDetails() {
+    if (this.props.onSelectionChange) {
+      this.props.onSelectionChange(this._selection);
     }
   }
 
@@ -186,7 +181,16 @@ export class AssetSelectModal extends React.Component {
   constructor(props) {
     super(props);
 
+    this.state = {
+      selection: { count: 0 },
+    };
+
     this.forwardEvent = this.forwardEvent.bind(this);
+    this.forwardEventWithSelections = this.forwardEventWithSelections.bind(
+      this
+    );
+    this.renderPanelHeader = this.renderPanelHeader.bind(this);
+    this.onSelectionChange = this.onSelectionChange.bind(this);
   }
 
   render() {
@@ -194,15 +198,68 @@ export class AssetSelectModal extends React.Component {
       <Panel
         type={PanelType.smallFluid}
         isOpen={this.props.isOpen}
-        headerText="Select Asset"
+        onRenderHeader={this.renderPanelHeader}
         onDismiss={(e) => this.forwardEvent(this.props.onDismiss)}
       >
-        <AssetsListOverview items={this.props.items} />
+        <AssetsListOverview
+          items={this.props.items}
+          onSelectionChange={this.onSelectionChange}
+        />
       </Panel>
     );
   }
 
   forwardEvent(handler) {
     if (handler) handler();
+  }
+
+  forwardEventWithSelections(handler) {
+    if (handler) handler(this.state.selection);
+  }
+
+  onSelectionChange(sel) {
+    this.setState({ selection: sel });
+  }
+
+  renderPanelHeader() {
+    const _items = [
+      {
+        key: "open",
+        text: "Open",
+        iconProps: { iconName: "FolderOpen" },
+        disabled: this.state.selection.count != 1,
+        ariaLabel: "Open",
+        onClick: (e) => this.forwardEventWithSelections(this.props.onOpenClick),
+      },
+      {
+        key: "add",
+        text: "Add",
+        cacheKey: "myCacheKey", // changing this key will invalidate this item's cache
+        iconProps: { iconName: "Add" },
+        ariaLabel: "Add",
+        onClick: (e) => this.forwardEvent(this.props.onAddClick),
+      },
+      {
+        key: "edit",
+        text: "Edit",
+        iconProps: { iconName: "Edit" },
+        disabled: this.state.selection.count != 1,
+        onClick: (e) => this.forwardEventWithSelections(this.props.onEditClick),
+      },
+      {
+        key: "delete",
+        text: "Delete",
+        iconProps: { iconName: "Delete" },
+        disabled: this.state.selection.count == 0,
+        onClick: (e) =>
+          this.forwardEventWithSelections(this.props.onDeleteClick),
+      },
+    ];
+
+    return (
+      <div style={{ width: "100%" }}>
+        <CommandBar items={_items} />
+      </div>
+    );
   }
 }

@@ -20,6 +20,7 @@ import { VerticalSeparator } from "./Separator";
 import "./App.css";
 import { render } from "@testing-library/react";
 import { DiscardDialog } from "./DiscardDialog";
+import { CommonEditDialog } from "./CommonEditDialog";
 import { AssetSelectModal } from "./AssetSelectModal";
 
 initializeIcons();
@@ -43,6 +44,10 @@ class App extends React.Component {
     this.newFile = this.newFile.bind(this);
     this.promptOpenFile = this.promptOpenFile.bind(this);
     this.saveFile = this.saveFile.bind(this);
+    this.openAsset = this.openAsset.bind(this);
+    this.addAsset = this.addAsset.bind(this);
+    this.editAsset = this.editAsset.bind(this);
+    this.deleteAsset = this.deleteAsset.bind(this);
   }
 
   componentDidMount() {
@@ -79,10 +84,21 @@ class App extends React.Component {
           hidden={!this.state.showDismissDialog}
           onDismiss={() => this.setState({ showDismissDialog: false })}
         />
+        <CommonEditDialog
+          title={this.state.editDialogTitle}
+          hidden={!this.state.showEditDialog}
+          data={this.state.editObject}
+          onDismiss={() => this.setState({ showEditDialog: false })}
+          onSave={() => this.setState({ showEditDialog: false })}
+        />
         <AssetSelectModal
           items={this.state.data}
           isOpen={this.state.showAssetSelectModal}
           onDismiss={() => this.setState({ showAssetSelectModal: false })}
+          onOpenClick={this.openAsset}
+          onAddClick={this.addAsset}
+          onEditClick={this.editAsset}
+          onDeleteClick={this.deleteAsset}
         />
       </div>
     );
@@ -278,6 +294,26 @@ class App extends React.Component {
       return false;
     }
     return true;
+  }
+
+  openAsset() {
+    // TODO:implement
+  }
+
+  editAsset() {
+    this.setState({ editDialogTitle: "Edit Asset", showEditDialog: true });
+  }
+
+  addAsset() {
+    this.setState({
+      editObject: {},
+      editDialogTitle: "Add Asset",
+      showEditDialog: true,
+    });
+  }
+
+  deleteAsset() {
+    // TODO:implement
   }
 }
 
