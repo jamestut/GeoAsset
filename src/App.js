@@ -24,81 +24,16 @@ import { AssetSelectModal } from "./AssetSelectModal";
 
 initializeIcons();
 
-const exampleData_ = [
-  {
-    name: "UD Jaya",
-    purchaseDate: "1970-01-01",
-    renewalDate: "2021-09-09",
-    sellDate: null,
-    remark: "Tanah utama",
-    areas: [
-      {
-        name: "Toko Utama",
-        purchaseDate: null,
-        renewalDate: null,
-        sellDate: null,
-        remark: null,
-        points: [
-          [-6.892677, 112.06192],
-          [-6.892801, 112.061859],
-          [-6.892937, 112.06187],
-          [-6.892979, 112.061964],
-          [-6.892738, 112.062067],
-        ],
-      },
-      {
-        name: "Gudang Semen New",
-        purchaseDate: "2008-01-01",
-        renewalDate: "2021-09-09",
-        sellDate: null,
-        remark: "Khusus simpan semen",
-        points: [
-          [-6.893262, 112.062028],
-          [-6.893355, 112.061996],
-          [-6.893379, 112.062055],
-          [-6.893677, 112.061905],
-          [-6.893757, 112.062004],
-          [-6.893592, 112.062071],
-          [-6.893549, 112.062152],
-          [-6.893347, 112.062227],
-        ],
-      },
-    ],
-  },
-  {
-    name: "Depo Jaya",
-    purchaseDate: "2011-01-01",
-    renewalDate: null,
-    sellDate: null,
-    remark: "Swalayan",
-    areas: [
-      {
-        name: "Gedung Utama",
-        purchaseDate: null,
-        renewalDate: null,
-        sellDate: null,
-        remark: null,
-        points: [
-          [-6.892327, 112.061006],
-          [-6.893272, 112.060684],
-          [-6.893374, 112.061095],
-          [-6.892426, 112.061336],
-        ],
-      },
-    ],
-  },
-];
-
 class App extends React.Component {
   constructor(props) {
     super(props);
 
-    // TODO: remove example data
     this.state = {
       sidebarWidth: 300,
-      data: exampleData_,
+      data: [],
       hasChanges: false,
       showAssetSelectModal: false,
+      fileHandle: null,
     };
     this.sepResize = false;
 
@@ -145,8 +80,9 @@ class App extends React.Component {
           onDismiss={() => this.setState({ showDismissDialog: false })}
         />
         <AssetSelectModal
+          items={this.state.data}
           isOpen={this.state.showAssetSelectModal}
-          onDismiss={() => this.setState({ showDismissDialog: false })}
+          onDismiss={() => this.setState({ showAssetSelectModal: false })}
         />
       </div>
     );
@@ -178,20 +114,158 @@ class App extends React.Component {
     }
   }
 
-  promptOpenFile() {
+  async promptOpenFile() {
     if (this.promptDismissOrSave(this.newFile)) {
-      this.fileHandle = window.chooseFileSystemEntries();
-      // TODO: change state to that represented from file
+      let fileHandle = await this.showFileDialog();
+      if (fileHandle) {
+        this.setState({ fileHandle: fileHandle });
+        await this.loadFile();
+      }
     }
   }
 
   saveFile() {
-    // TODO: save file
+    if (this.state.hasChanges) {
+      // TODO: save file
+    }
     console.error("File saving not implemented!");
   }
 
-  saveAsFile() {
-    this.fileHandle = window.chooseFileSystemEntries({ type: "saveFile" });
+  async saveAsFile() {
+    if (this.promptDismissOrSave(this.newFile)) {
+      this.setState({ fileHandle: await this.showFileDialog() });
+    }
+  }
+
+  async showFileDialog() {
+    const opts = {
+      types: [
+        {
+          description: "JSON GeoAsset Files",
+          accept: {
+            "application/json": [".json"],
+          },
+        },
+      ],
+    };
+    // for debugging. this is a new API afterall, introduced in Chromium 86.
+    try {
+      let [ret] = await window.showOpenFilePicker(opts);
+      return ret;
+    } catch (e) {
+      // assume cancelled
+      return null;
+    }
+  }
+
+  async loadFile() {
+    let newData = [];
+    if (!this.state.fileHandle) return;
+    try {
+      const file = await this.state.fileHandle.getFile();
+      const text = await file.text();
+      let obj = JSON.parse(text);
+      obj = this.sanitizeAssets(obj);
+      if (!obj) {
+        alert("Invalid file format.");
+        obj = [];
+      }
+      newData = obj;
+    } catch (e) {
+      alert("Error opening file.");
+    }
+    this.setState({ data: newData });
+  }
+
+  sanitizeAssets(obj) {
+    if (!Array.isArray(obj)) return null;
+    let success = true;
+    obj.forEach((item, idx, arr) => {
+      if (!success) return;
+      if (!(arr[idx] = this.sanitizeAssetObject(item))) {
+        success = false;
+      }
+    });
+    return success ? obj : null;
+  }
+
+  sanitizeAssetObject(obj) {
+    if (!obj) {
+      return null;
+    }
+
+    const parseDate = (datestr) => {
+      let vn = Date.parse(datestr);
+      if (isNaN(vn)) {
+        return null;
+      }
+      return new Date(vn);
+    };
+
+    const checkNumeric = (nm) => {
+      return typeof nm == "number" && !isNaN(nm) && isFinite(nm);
+    };
+
+    // subassets and main assets have some common props
+    const baseSanitizer = (obj) => {
+      try {
+        // we don't really allow nameless assets
+        if (typeof obj.name != "string") return null;
+        if (typeof obj.remark != "string") obj.remark = null;
+        obj.purchaseDate = parseDate(obj.purchaseDate);
+        obj.renewalDate = parseDate(obj.renewalDate);
+        obj.sellDate = parseDate(obj.renewalDate);
+        return obj;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // base assets
+    let ret = baseSanitizer(obj);
+    if (!ret) {
+      return null;
+    }
+
+    obj.computedArea = 0;
+
+    // check sub area assets
+    if (!Array.isArray(obj.areas)) {
+      return null;
+    }
+    obj.areas.forEach((subobj, idx, arr) => {
+      if (!(arr[idx] = baseSanitizer(subobj))) {
+        // we don't accept invalid areas
+        return null;
+      }
+      if (!Array.isArray(subobj.points)) {
+        // empty array no problem, but not invalid objects
+        return null;
+      }
+      // check each point, make sure they're really points
+      let pointsOk = true;
+      subobj.points.forEach((pts) => {
+        if (!pointsOk) return;
+        if (
+          !Array.isArray(pts) ||
+          pts.length != 2 ||
+          !checkNumeric(pts[0]) ||
+          !checkNumeric(pts[1])
+        ) {
+          pointsOk = false;
+        }
+      });
+      if (!pointsOk) {
+        return null;
+      }
+
+      // compute area for this subasset
+      obj.computedArea += subobj.computedArea = window.computeArea(
+        subobj.points
+      );
+    });
+
+    return ret;
   }
 
   /**

@@ -45,3 +45,12 @@ function initGMap() {
     evtOpts
   );
 }
+
+function computeArea(coords) {
+  // TODO: check correctness
+  let gmCoords = [];
+  coords.forEach((c) => {
+    gmCoords.push(new google.maps.LatLng({ lat: c[0], lng: c[1] }));
+  });
+  return google.maps.geometry.spherical.computeArea(gmCoords);
+}
