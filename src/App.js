@@ -31,7 +31,8 @@ class App extends React.Component {
 
     this.state = {
       sidebarWidth: 300,
-      data: [],
+      data: [] /*Main application data*/,
+      editObject: {} /*Currently edited asset*/,
       hasChanges: false,
       showAssetSelectModal: false,
       fileHandle: null,
@@ -48,6 +49,7 @@ class App extends React.Component {
     this.addAsset = this.addAsset.bind(this);
     this.editAsset = this.editAsset.bind(this);
     this.deleteAsset = this.deleteAsset.bind(this);
+    this.onSaveCommonEdit = this.onSaveCommonEdit.bind(this);
   }
 
   componentDidMount() {
@@ -89,12 +91,15 @@ class App extends React.Component {
           hidden={!this.state.showEditDialog}
           data={this.state.editObject}
           onDismiss={() => this.setState({ showEditDialog: false })}
-          onSave={() => this.setState({ showEditDialog: false })}
+          onSave={this.onSaveCommonEdit}
         />
         <AssetSelectModal
           items={this.state.data}
           isOpen={this.state.showAssetSelectModal}
-          onDismiss={() => this.setState({ showAssetSelectModal: false })}
+          onDismiss={() => {
+            if (!this.state.showEditDialog)
+              this.setState({ showAssetSelectModal: false });
+          }}
           onOpenClick={this.openAsset}
           onAddClick={this.addAsset}
           onEditClick={this.editAsset}
@@ -190,7 +195,7 @@ class App extends React.Component {
     } catch (e) {
       alert("Error opening file.");
     }
-    this.setState({ data: newData });
+    this.setState({ data: newData, hasChanges: false });
   }
 
   sanitizeAssets(obj) {
@@ -300,11 +305,25 @@ class App extends React.Component {
     // TODO:implement
   }
 
-  editAsset() {
-    this.setState({ editDialogTitle: "Edit Asset", showEditDialog: true });
+  editAsset(sel) {
+    this.editMode = true;
+    this.editSubAsset = false;
+    this.editObject = sel.getSelection()[0];
+
+    let editObjPrs = {};
+    this.copyAssetCommonProps(editObjPrs, this.editObject);
+
+    this.setState({
+      editObject: editObjPrs,
+      editDialogTitle: "Edit Asset",
+      showEditDialog: true,
+    });
   }
 
   addAsset() {
+    this.editMode = false;
+    this.editSubAsset = false;
+
     this.setState({
       editObject: {},
       editDialogTitle: "Add Asset",
@@ -314,6 +333,38 @@ class App extends React.Component {
 
   deleteAsset() {
     // TODO:implement
+  }
+
+  copyAssetCommonProps(oldObj, newObj) {
+    const props = ["name", "remark", "purchaseDate", "renewalDate", "sellDate"];
+    props.forEach((prop) => {
+      if (newObj[prop] === undefined) oldObj[prop] = null;
+      else oldObj[prop] = newObj[prop];
+    });
+  }
+
+  onSaveCommonEdit(data) {
+    let stor = this.state.data;
+    if (!this.editSubAsset) {
+      // asset editor
+      if (!this.editMode) {
+        // add
+        let newObj = {};
+        newObj.areas = [];
+        newObj.computedArea = 0.0;
+        this.copyAssetCommonProps(newObj, data);
+        stor.push(newObj);
+      } else {
+        // edit common data
+        this.copyAssetCommonProps(this.editObject, data);
+      }
+    }
+    this.setState({
+      showEditDialog: false,
+      showAssetSelectModal: false /* for update */,
+      data: stor,
+      hasChanges: true,
+    });
   }
 }
 
