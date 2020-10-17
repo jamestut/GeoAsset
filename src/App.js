@@ -43,13 +43,19 @@ class App extends React.Component {
     this.onSepMouseUp = this.onSepMouseUp.bind(this);
     this.onSepMouseMove = this.onSepMouseMove.bind(this);
     this.newFile = this.newFile.bind(this);
+    this.newFileAction = this.newFileAction.bind(this);
     this.promptOpenFile = this.promptOpenFile.bind(this);
     this.saveFile = this.saveFile.bind(this);
+    this.saveAsFile = this.saveAsFile.bind(this);
+    this.saveFileAction = this.saveFileAction.bind(this);
     this.openAsset = this.openAsset.bind(this);
     this.addAsset = this.addAsset.bind(this);
     this.editAsset = this.editAsset.bind(this);
     this.deleteAsset = this.deleteAsset.bind(this);
     this.onSaveCommonEdit = this.onSaveCommonEdit.bind(this);
+    this.discardDialogSave = this.discardDialogSave.bind(this);
+    this.discardDialogDiscard = this.discardDialogDiscard.bind(this);
+    this.discardDialogProceed = this.discardDialogProceed.bind(this);
   }
 
   componentDidMount() {
@@ -84,6 +90,8 @@ class App extends React.Component {
         {/* Dialogs */}
         <DiscardDialog
           hidden={!this.state.showDismissDialog}
+          onSave={this.discardDialogSave}
+          onDiscard={this.discardDialogDiscard}
           onDismiss={() => this.setState({ showDismissDialog: false })}
         />
         <CommonEditDialog
@@ -131,13 +139,17 @@ class App extends React.Component {
   /* File management */
   newFile() {
     if (this.promptDismissOrSave(this.newFile)) {
-      // TODO: new file
+      this.newFileAction();
     }
+  }
+
+  newFileAction() {
+    this.setState({ fileHandle: null, data: [], hasChanges: false });
   }
 
   async promptOpenFile() {
     if (this.promptDismissOrSave(this.newFile)) {
-      let fileHandle = await this.showFileDialog();
+      let fileHandle = await this.showFileDialog(false);
       if (fileHandle) {
         this.setState({ fileHandle: fileHandle });
         await this.loadFile();
@@ -147,18 +159,77 @@ class App extends React.Component {
 
   saveFile() {
     if (this.state.hasChanges) {
-      // TODO: save file
+      this.saveFileAction();
     }
-    console.error("File saving not implemented!");
+  }
+
+  async saveFileAction() {
+    if (!this.state.fileHandle) {
+      return await this.saveAsFile();
+    }
+
+    // generate data
+    let trans = [];
+    this.state.data.forEach((asset) => {
+      const fillBasicProperties = (target, src) => {
+        ["name", "remark"].forEach((prop) => {
+          target[prop] = src[prop] ? src[prop] : null;
+        });
+        ["purchaseDate", "renewalDate", "sellDate"].forEach((prop) => {
+          let currDate = src[prop];
+          target[prop] = currDate
+            ? new Date().toISOString().split("T")[0]
+            : null;
+        });
+      };
+
+      let cAsset = { areas: [] };
+      fillBasicProperties(cAsset, asset);
+
+      asset.areas.forEach((subAsset) => {
+        let cSa = { points: subAsset.points };
+        fillBasicProperties(cSa, subAsset);
+        cAsset.areas.push(cSa);
+      });
+
+      trans.push(cAsset);
+    });
+
+    // try save
+    const serObj = JSON.stringify(trans);
+    let writable;
+    try {
+      writable = await this.state.fileHandle.createWritable();
+    } catch (e) {
+      alert("Error opening file for writing.");
+      return false;
+    }
+
+    let success = false;
+    try {
+      await writable.truncate(0);
+      await writable.write(serObj);
+      success = true;
+    } catch (e) {
+      alert("Error saving file.");
+    } finally {
+      await writable.close();
+    }
+
+    if (success) this.setState({ hasChanges: false });
+    return success;
   }
 
   async saveAsFile() {
-    if (this.promptDismissOrSave(this.newFile)) {
-      this.setState({ fileHandle: await this.showFileDialog() });
+    let newFh = await this.showFileDialog(true);
+    if (newFh) {
+      this.setState({ fileHandle: newFh });
+      return this.saveFileAction();
     }
+    return false;
   }
 
-  async showFileDialog() {
+  async showFileDialog(write) {
     const opts = {
       types: [
         {
@@ -171,8 +242,12 @@ class App extends React.Component {
     };
     // for debugging. this is a new API afterall, introduced in Chromium 86.
     try {
-      let [ret] = await window.showOpenFilePicker(opts);
-      return ret;
+      if (write) {
+        return await window.showSaveFilePicker(opts);
+      } else {
+        let [res] = await window.showOpenFilePicker(opts);
+        return res;
+      }
     } catch (e) {
       // assume cancelled
       return null;
@@ -196,6 +271,23 @@ class App extends React.Component {
       alert("Error opening file.");
     }
     this.setState({ data: newData, hasChanges: false });
+  }
+
+  discardDialogProceed() {
+    this.setState({ showDismissDialog: false });
+    this.skipDismissDialog = true;
+    if (this.nextOp) this.nextOp();
+  }
+
+  async discardDialogSave() {
+    if (await this.saveFileAction()) {
+      this.discardDialogProceed();
+    }
+  }
+
+  discardDialogDiscard() {
+    this.newFileAction();
+    this.discardDialogProceed();
   }
 
   sanitizeAssets(obj) {
@@ -293,6 +385,10 @@ class App extends React.Component {
    * @returns false if there is an unmodified changes pending and a dialog is shown, true otherwise.
    */
   promptDismissOrSave(nextOp) {
+    if (this.skipDismissDialog) {
+      this.skipDismissDialog = false;
+      return true;
+    }
     if (this.state.hasChanges) {
       this.nextOp = nextOp;
       this.setState({ showDismissDialog: true });
