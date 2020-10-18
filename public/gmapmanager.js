@@ -2,7 +2,7 @@
 
 window.gmapReady = false;
 
-let polyEditor = {};
+let polyEditor = { active: false };
 
 function GMapReadyCallback() {
   let el = document.querySelector("#gmap");
@@ -32,12 +32,18 @@ function setupClasses() {
         lst.appendChild(menuItem);
       });
 
-      google.maps.event.addDomListener(this.div_, "mousedown", (e) => {
-        let target = e.path[0];
-        let callback = target.callback;
-        if (!callback) return;
-        callback(target.cbData);
-      });
+      google.maps.event.addDomListener(
+        this.div_,
+        "mousedown",
+        (e) => {
+          e.preventDefault();
+          let target = e.path[0];
+          let callback = target.callback;
+          if (!callback) return;
+          callback(target.cbData);
+        },
+        true
+      );
 
       this.div_.appendChild(lst);
     }
@@ -133,7 +139,9 @@ function computeArea(coords) {
   return google.maps.geometry.spherical.computeArea(gmCoords);
 }
 
-function openPolyEditor(polyData) {
+function openPolyEditor(polyData, callback) {
+  if (polyEditor.active) return;
+
   if (polyData && polyData.length) {
     let center = { lat: 0, lng: 0 };
     polyEditor.baseCoords = [];
@@ -158,6 +166,8 @@ function openPolyEditor(polyData) {
     ];
   }
 
+  polyEditor.callback = callback;
+
   if (!polyEditor.poly) {
     polyEditor.poly = new google.maps.Polygon({
       paths: polyEditor.baseCoords,
@@ -168,7 +178,6 @@ function openPolyEditor(polyData) {
       fillOpacity: 0.35,
       editable: true,
     });
-    polyEditor.poly.setMap(gmapObj);
 
     // setup action menus
     let vertexDeleteMenuCbData = { vertex: null, obj: polyEditor.poly };
@@ -180,6 +189,7 @@ function openPolyEditor(polyData) {
       },
     ]);
     google.maps.event.addListener(polyEditor.poly, "rightclick", (e) => {
+      if (!polyEditor.active) return;
       // Check if click was on a vertex control point
       if (e.vertex == undefined) {
         return;
@@ -189,23 +199,37 @@ function openPolyEditor(polyData) {
     });
 
     const optionMenu = new mapClasses.MapMenu([
-      { caption: "Save", callback: savePolyEditor, cbData: null },
-      { caption: "Discard", callback: discardPolyEditor, cbData: null },
+      { caption: "Save", callback: endPolyEditor, cbData: true },
+      { caption: "Discard", callback: endPolyEditor, cbData: false },
     ]);
     google.maps.event.addListener(gmapObj, "rightclick", (e) => {
+      if (!polyEditor.active) return;
       optionMenu.open(gmapObj, e.latLng);
     });
   } else {
     polyEditor.poly.setPath(polyEditor.baseCoords);
   }
+
+  polyEditor.poly.setMap(gmapObj);
+  polyEditor.active = true;
 }
 
-function savePolyEditor() {
-  console.error("Not implemented");
-}
+function endPolyEditor(save) {
+  if (window.confirm(`${save ? "Save" : "Discard"} edited area?`)) {
+    polyEditor.poly.setMap(null);
+    polyEditor.active = false;
 
-function discardPolyEditor() {
-  if (window.confirm("Discard edited area?")) polyEditor.poly.setMap(null);
+    if (polyEditor.callback) {
+      let cbData = null;
+      if (save) {
+        cbData = [];
+        polyEditor.poly.getPath().forEach((pth) => {
+          cbData.push([pth.lat, pth.lng]);
+        });
+      }
+      polyEditor.callback(cbData);
+    }
+  }
 }
 
 function deleteVertex(v) {
