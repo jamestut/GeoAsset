@@ -51,6 +51,7 @@ class AppSideBar extends React.Component {
     this.state = { selection: { count: 0 } };
 
     this.onBasicClick = this.onBasicClick.bind(this);
+    this.onSelClick = this.onSelClick.bind(this);
     this.saveSelectionDetails = this.saveSelectionDetails.bind(this);
 
     this._selection = new Selection({
@@ -121,11 +122,15 @@ class AppSideBar extends React.Component {
   }
 
   onBasicClick(handler) {
-    if (handler) handler();
+    if (handler) {
+      handler();
+    }
   }
 
   onSelClick(handler) {
-    if (handler) handler(this._selection);
+    if (handler) {
+      handler(this._selection);
+    }
   }
 
   saveSelectionDetails() {

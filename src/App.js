@@ -53,6 +53,7 @@ class App extends React.Component {
     this.addAsset = this.addAsset.bind(this);
     this.editAsset = this.editAsset.bind(this);
     this.deleteAsset = this.deleteAsset.bind(this);
+    this.deleteSubAsset = this.deleteSubAsset.bind(this);
     this.onSaveCommonEdit = this.onSaveCommonEdit.bind(this);
     this.discardDialogSave = this.discardDialogSave.bind(this);
     this.discardDialogDiscard = this.discardDialogDiscard.bind(this);
@@ -85,6 +86,9 @@ class App extends React.Component {
             width={this.state.sidebarWidth}
             data={this.state.selectedAsset}
             onSelectAsset={() => this.setState({ showAssetSelectModal: true })}
+            onAddSub={() => this.addAsset(true)}
+            onInfoSub={(sel) => this.editAsset(true, sel)}
+            onDeleteSub={this.deleteSubAsset}
           />
           <VerticalSeparator onMouseDown={this.onSepMouseDown} />
           <div id="gmap"></div>
@@ -111,8 +115,8 @@ class App extends React.Component {
               this.setState({ showAssetSelectModal: false });
           }}
           onOpenClick={this.openAsset}
-          onAddClick={this.addAsset}
-          onEditClick={this.editAsset}
+          onAddClick={() => this.addAsset(false)}
+          onEditClick={(sel) => this.editAsset(false, sel)}
           onDeleteClick={this.deleteAsset}
         />
       </div>
@@ -426,9 +430,9 @@ class App extends React.Component {
     });
   }
 
-  editAsset(sel) {
+  editAsset(isSub, sel) {
     this.editMode = true;
-    this.editSubAsset = false;
+    this.editSubAsset = isSub;
     this.editObject = sel.getSelection()[0];
 
     let editObjPrs = {};
@@ -441,9 +445,9 @@ class App extends React.Component {
     });
   }
 
-  addAsset() {
+  addAsset(isSub) {
     this.editMode = false;
-    this.editSubAsset = false;
+    this.editSubAsset = isSub;
 
     this.setState({
       editObject: {},
@@ -478,6 +482,26 @@ class App extends React.Component {
     });
   }
 
+  deleteSubAsset(sel) {
+    let selIdx = sel
+      .getSelectedIndices()
+      .slice(0)
+      .sort((a, b) => b - a);
+    if (selIdx.length) {
+      if (!window.confirm(`Delete ${selIdx.length} areas?`)) {
+        return false;
+      }
+    } else return false;
+    let data = this.state.selectedAsset;
+    selIdx.forEach((idx) => {
+      data.areas.splice(idx, 1);
+    });
+    // force update of the list
+    data.areas = data.areas.slice(0);
+    this.setState({ selectedAsset: data });
+    return true;
+  }
+
   copyAssetCommonProps(oldObj, newObj) {
     const props = ["name", "remark", "purchaseDate", "renewalDate", "sellDate"];
     props.forEach((prop) => {
@@ -487,9 +511,13 @@ class App extends React.Component {
   }
 
   onSaveCommonEdit(data) {
-    let stor = this.state.data;
+    let newState = {
+      showEditDialog: false,
+      hasChanges: true,
+    };
     if (!this.editSubAsset) {
       // asset editor
+      let stor = this.state.data;
       if (!this.editMode) {
         // add
         let newObj = {};
@@ -503,13 +531,26 @@ class App extends React.Component {
         // edit common data
         this.copyAssetCommonProps(this.editObject, data);
       }
+      newState.data = stor;
+      newState.showAssetSelectModal = false; // for update
+    } else {
+      // subasset (area) editor
+      if (!this.editMode) {
+        let stor = this.state.selectedAsset.areas;
+        // add
+        let newObj = {};
+        newObj.computedArea = 0.0;
+        this.copyAssetCommonProps(newObj, data);
+        stor.push(newObj);
+      } else {
+        // edit common data
+        this.copyAssetCommonProps(this.editObject, data);
+      }
+      // force update sidebar
+      this.state.selectedAsset.areas = this.state.selectedAsset.areas.slice(0);
+      newState.selectedAsset = this.state.selectedAsset;
     }
-    this.setState({
-      showEditDialog: false,
-      showAssetSelectModal: false /* for update */,
-      data: stor,
-      hasChanges: true,
-    });
+    this.setState(newState);
   }
 }
 
