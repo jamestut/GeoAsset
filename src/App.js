@@ -56,6 +56,7 @@ class App extends React.Component {
     this.discardDialogSave = this.discardDialogSave.bind(this);
     this.discardDialogDiscard = this.discardDialogDiscard.bind(this);
     this.discardDialogProceed = this.discardDialogProceed.bind(this);
+    this.reindexData = this.reindexData.bind(this);
   }
 
   componentDidMount() {
@@ -267,10 +268,25 @@ class App extends React.Component {
         obj = [];
       }
       newData = obj;
+      this.reindexData(0, newData);
     } catch (e) {
       alert("Error opening file.");
     }
     this.setState({ data: newData, hasChanges: false });
+  }
+
+  /**
+   * @param hint If provided, start looking from the given index instead.
+   */
+  reindexData(hint, pData) {
+    // in-place modification w/o having to reset state, as indices data should
+    // not be visible in any of the UI
+    let data = pData ?? this.state.data;
+    if (!data) return;
+    const begin = hint ?? 0;
+    for (let i = begin; i < data.length; ++i) {
+      data[i]["index"] = i;
+    }
   }
 
   discardDialogProceed() {
@@ -427,8 +443,29 @@ class App extends React.Component {
     });
   }
 
-  deleteAsset() {
-    // TODO:implement
+  deleteAsset(sel) {
+    // sort descending to make it easier to delete
+    let selIdx = [];
+    sel.getSelection().forEach((item) => selIdx.push(item.index));
+    if (selIdx.length) {
+      if (!window.confirm(`Delete ${selIdx.length} items?`)) {
+        return;
+      }
+    } else return;
+
+    selIdx.sort((a, b) => b - a);
+    let data = this.state.data;
+    selIdx.forEach((idx) => {
+      data.splice(idx, 1);
+    });
+
+    // reindex from the smallest index that we removed
+    if (selIdx.length) this.reindexData(selIdx[selIdx.length - 1]);
+
+    this.setState({
+      data: data,
+      showAssetSelectModal: false,
+    });
   }
 
   copyAssetCommonProps(oldObj, newObj) {
@@ -450,6 +487,8 @@ class App extends React.Component {
         newObj.computedArea = 0.0;
         this.copyAssetCommonProps(newObj, data);
         stor.push(newObj);
+        // update index
+        this.reindexData(stor.length - 1);
       } else {
         // edit common data
         this.copyAssetCommonProps(this.editObject, data);
