@@ -36,6 +36,7 @@ class App extends React.Component {
       hasChanges: false,
       showAssetSelectModal: false,
       fileHandle: null,
+      selectedAsset: null,
     };
     this.sepResize = false;
 
@@ -82,7 +83,7 @@ class App extends React.Component {
         <div className="app-content">
           <AppSideBar
             width={this.state.sidebarWidth}
-            data={this.state.data}
+            data={this.state.selectedAsset}
             onSelectAsset={() => this.setState({ showAssetSelectModal: true })}
           />
           <VerticalSeparator onMouseDown={this.onSepMouseDown} />
@@ -145,7 +146,12 @@ class App extends React.Component {
   }
 
   newFileAction() {
-    this.setState({ fileHandle: null, data: [], hasChanges: false });
+    this.setState({
+      fileHandle: null,
+      data: [],
+      hasChanges: false,
+      selectedAsset: null,
+    });
   }
 
   async promptOpenFile() {
@@ -272,7 +278,7 @@ class App extends React.Component {
     } catch (e) {
       alert("Error opening file.");
     }
-    this.setState({ data: newData, hasChanges: false });
+    this.setState({ data: newData, hasChanges: false, selectedAsset: null });
   }
 
   /**
@@ -413,8 +419,11 @@ class App extends React.Component {
     return true;
   }
 
-  openAsset() {
-    // TODO:implement
+  openAsset(sel) {
+    this.setState({
+      selectedAsset: sel.getSelection()[0],
+      showAssetSelectModal: false,
+    });
   }
 
   editAsset(sel) {
@@ -464,6 +473,7 @@ class App extends React.Component {
 
     this.setState({
       data: data,
+      selectedAsset: null,
       showAssetSelectModal: false,
     });
   }
