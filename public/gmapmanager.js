@@ -144,15 +144,36 @@ function openPolyEditor(polyData, callback) {
 
   if (polyData && polyData.length) {
     let center = { lat: 0, lng: 0 };
+    let minMax = {
+      latMin: Infinity,
+      lngMin: Infinity,
+      latMax: -Infinity,
+      lngMax: -Infinity,
+    };
     polyEditor.baseCoords = [];
     polyData.forEach((arr) => {
       polyEditor.baseCoords.push({ lat: arr[0], lng: arr[1] });
       center.lat += arr[0];
       center.lng += arr[1];
+      if (arr[0] < minMax.latMin) minMax.latMin = arr[0];
+      if (arr[0] > minMax.latMax) minMax.latMax = arr[0];
+      if (arr[1] < minMax.lngMin) minMax.lngMin = arr[1];
+      if (arr[1] > minMax.lngMax) minMax.lngMax = arr[1];
     });
     center.lat /= polyData.length;
     center.lng /= polyData.length;
     gmapObj.setCenter(center);
+
+    // compute the perfect zoom level
+    let magnitude = Math.max(
+      Math.abs(minMax.latMin - minMax.latMax),
+      Math.abs(minMax.lngMin - minMax.lngMax)
+    );
+    let targetZoomLevel = 23;
+    for (targetZoomLevel = 23; targetZoomLevel > 0; --targetZoomLevel) {
+      if (magnitude < 1000.0 / 2 ** targetZoomLevel) break;
+    }
+    gmapObj.setZoom(targetZoomLevel);
   } else {
     // create a new rectangle based on current position
     const currPos = gmapObj.getCenter();
