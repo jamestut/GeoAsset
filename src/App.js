@@ -52,6 +52,7 @@ class App extends React.Component {
     this.openAsset = this.openAsset.bind(this);
     this.addAsset = this.addAsset.bind(this);
     this.editAsset = this.editAsset.bind(this);
+    this.editArea = this.editArea.bind(this);
     this.deleteAsset = this.deleteAsset.bind(this);
     this.deleteSubAsset = this.deleteSubAsset.bind(this);
     this.onSaveCommonEdit = this.onSaveCommonEdit.bind(this);
@@ -88,6 +89,7 @@ class App extends React.Component {
             onSelectAsset={() => this.setState({ showAssetSelectModal: true })}
             onAddSub={() => this.addAsset(true)}
             onInfoSub={(sel) => this.editAsset(true, sel)}
+            onEditSub={this.editArea}
             onDeleteSub={this.deleteSubAsset}
           />
           <VerticalSeparator onMouseDown={this.onSepMouseDown} />
@@ -443,6 +445,10 @@ class App extends React.Component {
       editDialogTitle: "Edit Asset",
       showEditDialog: true,
     });
+  }
+
+  editArea(sel) {
+    window.openPolyEditor();
   }
 
   addAsset(isSub) {
