@@ -131,7 +131,6 @@ function initGMap() {
 }
 
 function computeArea(coords) {
-  // TODO: check correctness
   let gmCoords = [];
   coords.forEach((c) => {
     gmCoords.push(new google.maps.LatLng({ lat: c[0], lng: c[1] }));
@@ -245,7 +244,7 @@ function endPolyEditor(save) {
       if (save) {
         cbData = [];
         polyEditor.poly.getPath().forEach((pth) => {
-          cbData.push([pth.lat, pth.lng]);
+          cbData.push([pth.lat(), pth.lng()]);
         });
       }
       polyEditor.callback(cbData);

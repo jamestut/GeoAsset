@@ -60,6 +60,7 @@ class App extends React.Component {
     this.discardDialogDiscard = this.discardDialogDiscard.bind(this);
     this.discardDialogProceed = this.discardDialogProceed.bind(this);
     this.reindexData = this.reindexData.bind(this);
+    this.editAreaCallback = this.editAreaCallback.bind(this);
   }
 
   componentDidMount() {
@@ -448,7 +449,28 @@ class App extends React.Component {
   }
 
   editArea(sel) {
-    window.openPolyEditor();
+    this.setState({ polyEditMode: true });
+    this.polyEditObject = sel.getSelection()[0];
+    window.openPolyEditor(this.polyEditObject.points, this.editAreaCallback);
+  }
+
+  editAreaCallback(newPoly) {
+    let newState = { polyEditMode: false };
+    if (newPoly) {
+      this.polyEditObject.points = newPoly;
+      newState.hasChanges = true;
+
+      // computed area
+      this.state.selectedAsset.computedArea -= this.polyEditObject.computedArea;
+      this.state.selectedAsset.computedArea += this.polyEditObject.computedArea = window.computeArea(
+        newPoly
+      );
+
+      // force refresh
+      newState.selectedAsset = this.state.selectedAsset;
+      newState.selectedAsset.areas = newState.selectedAsset.areas.slice(0);
+    }
+    this.setState(newState);
   }
 
   addAsset(isSub) {
