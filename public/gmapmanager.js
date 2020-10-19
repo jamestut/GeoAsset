@@ -3,6 +3,7 @@
 window.gmapReady = false;
 
 let polyEditor = { active: false };
+let polyShow = {};
 
 function GMapReadyCallback() {
   let el = document.querySelector("#gmap");
@@ -142,37 +143,11 @@ function openPolyEditor(polyData, callback) {
   if (polyEditor.active) return;
 
   if (polyData && polyData.length) {
-    let center = { lat: 0, lng: 0 };
-    let minMax = {
-      latMin: Infinity,
-      lngMin: Infinity,
-      latMax: -Infinity,
-      lngMax: -Infinity,
-    };
     polyEditor.baseCoords = [];
     polyData.forEach((arr) => {
       polyEditor.baseCoords.push({ lat: arr[0], lng: arr[1] });
-      center.lat += arr[0];
-      center.lng += arr[1];
-      if (arr[0] < minMax.latMin) minMax.latMin = arr[0];
-      if (arr[0] > minMax.latMax) minMax.latMax = arr[0];
-      if (arr[1] < minMax.lngMin) minMax.lngMin = arr[1];
-      if (arr[1] > minMax.lngMax) minMax.lngMax = arr[1];
     });
-    center.lat /= polyData.length;
-    center.lng /= polyData.length;
-    gmapObj.setCenter(center);
-
-    // compute the perfect zoom level
-    let magnitude = Math.max(
-      Math.abs(minMax.latMin - minMax.latMax),
-      Math.abs(minMax.lngMin - minMax.lngMax)
-    );
-    let targetZoomLevel = 23;
-    for (targetZoomLevel = 23; targetZoomLevel > 0; --targetZoomLevel) {
-      if (magnitude < 1000.0 / 2 ** targetZoomLevel) break;
-    }
-    gmapObj.setZoom(targetZoomLevel);
+    computeAndSetCenterAndZoom([polyData]);
   } else {
     // create a new rectangle based on current position
     const currPos = gmapObj.getCenter();
@@ -232,12 +207,16 @@ function openPolyEditor(polyData, callback) {
 
   polyEditor.poly.setMap(gmapObj);
   polyEditor.active = true;
+  // hide the view polygon
+  if (polyShow.data) polyShow.data.forEach((poly) => poly.setMap(null));
 }
 
 function endPolyEditor(save) {
   if (window.confirm(`${save ? "Save" : "Discard"} edited area?`)) {
     polyEditor.poly.setMap(null);
     polyEditor.active = false;
+    // show the hidden view polygon again
+    if (polyShow.data) polyShow.data.forEach((poly) => poly.setMap(gmapObj));
 
     if (polyEditor.callback) {
       let cbData = null;
@@ -249,9 +228,77 @@ function endPolyEditor(save) {
       }
       polyEditor.callback(cbData);
     }
+
+    // confirm to caller that user has confirmed the change
+    return true;
   }
+  return false;
+}
+
+function showPolys(polyset) {
+  if (polyShow.data) {
+    polyShow.data.forEach((poly) => poly.setMap(null));
+  }
+  polyShow.data = [];
+  polyset.forEach((rawPoly) => {
+    let paths = [];
+    rawPoly.forEach((c) => paths.push({ lat: c[0], lng: c[1] }));
+    let poly = new google.maps.Polygon({
+      paths: paths,
+      strokeColor: "#FF0000",
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: "#FF0000",
+      fillOpacity: 0.35,
+      editable: false,
+    });
+    if (!polyEditor.active) poly.setMap(gmapObj);
+    polyShow.data.push(poly);
+  });
+  if (!polyEditor.active) computeAndSetCenterAndZoom(polyset);
 }
 
 function deleteVertex(v) {
   v.obj.getPath().removeAt(v.vertex);
+}
+
+function computeAndSetCenterAndZoom(polys) {
+  let center = { lat: 0, lng: 0 };
+  let minMax = {
+    latMin: Infinity,
+    lngMin: Infinity,
+    latMax: -Infinity,
+    lngMax: -Infinity,
+  };
+
+  //coordinates count
+  let cCount = 0;
+  polys.forEach((poly) => {
+    poly.forEach((c) => {
+      ++cCount;
+      if (c[0] < minMax.latMin) minMax.latMin = c[0];
+      if (c[0] > minMax.latMax) minMax.latMax = c[0];
+      if (c[1] < minMax.lngMin) minMax.lngMin = c[1];
+      if (c[1] > minMax.lngMax) minMax.lngMax = c[1];
+      center.lat += c[0];
+      center.lng += c[1];
+    });
+  });
+  if (!cCount) return;
+
+  // center to the average
+  center.lat /= cCount;
+  center.lng /= cCount;
+  gmapObj.setCenter(center);
+
+  // compute the perfect zoom level
+  let magnitude = Math.max(
+    Math.abs(minMax.latMin - minMax.latMax),
+    Math.abs(minMax.lngMin - minMax.lngMax)
+  );
+  let targetZoomLevel = 23;
+  for (targetZoomLevel = 23; targetZoomLevel > 0; --targetZoomLevel) {
+    if (magnitude < 1000.0 / 2 ** targetZoomLevel) break;
+  }
+  gmapObj.setZoom(targetZoomLevel);
 }

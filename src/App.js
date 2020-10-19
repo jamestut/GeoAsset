@@ -61,6 +61,7 @@ class App extends React.Component {
     this.discardDialogProceed = this.discardDialogProceed.bind(this);
     this.reindexData = this.reindexData.bind(this);
     this.editAreaCallback = this.editAreaCallback.bind(this);
+    this.subAssetSelectionChanged = this.subAssetSelectionChanged.bind(this);
   }
 
   componentDidMount() {
@@ -92,6 +93,7 @@ class App extends React.Component {
             onInfoSub={(sel) => this.editAsset(true, sel)}
             onEditSub={this.editArea}
             onDeleteSub={this.deleteSubAsset}
+            onSelectionChanged={this.subAssetSelectionChanged}
           />
           <VerticalSeparator onMouseDown={this.onSepMouseDown} />
           <div id="gmap"></div>
@@ -473,6 +475,12 @@ class App extends React.Component {
     this.setState(newState);
   }
 
+  subAssetSelectionChanged(sel) {
+    let polys = [];
+    sel.getSelection().forEach((subasset) => polys.push(subasset.points));
+    window.showPolys(polys);
+  }
+
   addAsset(isSub) {
     this.editMode = false;
     this.editSubAsset = isSub;
@@ -568,6 +576,7 @@ class App extends React.Component {
         // add
         let newObj = {};
         newObj.computedArea = 0.0;
+        newObj.points = [];
         this.copyAssetCommonProps(newObj, data);
         stor.push(newObj);
       } else {

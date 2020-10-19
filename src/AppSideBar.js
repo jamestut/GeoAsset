@@ -135,6 +135,8 @@ class AppSideBar extends React.Component {
 
   saveSelectionDetails() {
     this.setState({ selection: this._selection });
+    // propagate
+    this.onSelClick(this.props.onSelectionChanged);
   }
 }
 
