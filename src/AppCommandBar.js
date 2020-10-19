@@ -7,8 +7,6 @@ import { IButtonProps } from "office-ui-fabric-react/lib/Button";
 
 const overflowProps = { ariaLabel: "More commands" };
 
-
-
 class AppCommandBar extends React.Component {
   constructor(props) {
     super(props);
@@ -24,28 +22,30 @@ class AppCommandBar extends React.Component {
         cacheKey: "myCacheKey", // changing this key will invalidate this item's cache
         iconProps: { iconName: "OpenFile" },
         ariaLabel: "New",
-        onClick: (e)=>this.forwardEvent("new")
+        disabled: this.props.disabled,
+        onClick: (e) => this.forwardEvent("new"),
       },
       {
         key: "open",
         text: "Open",
         iconProps: { iconName: "FabricOpenFolderHorizontal" },
-        onClick: (e)=>this.forwardEvent("open")
+        disabled: this.props.disabled,
+        onClick: (e) => this.forwardEvent("open"),
       },
       {
         key: "save",
         text: "Save",
         iconProps: { iconName: "Save" },
         split: true,
-        disabled: !this.props.saveEnabled,
-        onClick: (e)=>this.forwardEvent("save"),
+        disabled: !this.props.saveEnabled || this.props.disabled,
+        onClick: (e) => this.forwardEvent("save"),
         subMenuProps: {
           items: [
             {
               key: "saveas",
               text: "Save As",
               iconProps: { iconName: "SaveAs" },
-              onClick: (e)=>this.forwardEvent("saveas")
+              onClick: (e) => this.forwardEvent("saveas"),
             },
           ],
         },
@@ -57,7 +57,7 @@ class AppCommandBar extends React.Component {
 
   forwardEvent(mode) {
     let handler = null;
-    switch(mode) {
+    switch (mode) {
       case "new":
         handler = this.props.onNewClick ?? null;
         break;
@@ -71,8 +71,7 @@ class AppCommandBar extends React.Component {
         handler = this.props.onSaveAsClick ?? null;
         break;
     }
-    if(handler != null)
-      handler();
+    if (handler != null) handler();
   }
 }
 

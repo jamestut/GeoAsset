@@ -37,6 +37,7 @@ class App extends React.Component {
       showAssetSelectModal: false,
       fileHandle: null,
       selectedAsset: null,
+      polyEditMode: false,
     };
     this.sepResize = false;
 
@@ -83,6 +84,7 @@ class App extends React.Component {
           onOpenClick={this.promptOpenFile}
           onSaveClick={this.saveFile}
           onSaveAsClick={this.saveAsFile}
+          disabled={this.state.polyEditMode}
         />
         <div className="app-content">
           <AppSideBar
@@ -94,6 +96,7 @@ class App extends React.Component {
             onEditSub={this.editArea}
             onDeleteSub={this.deleteSubAsset}
             onSelectionChanged={this.subAssetSelectionChanged}
+            disabled={this.state.polyEditMode}
           />
           <VerticalSeparator onMouseDown={this.onSepMouseDown} />
           <div id="gmap"></div>

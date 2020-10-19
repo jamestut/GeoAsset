@@ -72,6 +72,7 @@ class AppSideBar extends React.Component {
           <DefaultButton
             text="Open Assets List"
             onClick={() => this.onBasicClick(this.props.onSelectAsset)}
+            disabled={this.props.disabled}
           />
           <Separator />
           <div className="appsidebar-subasset-cmdbar">
@@ -80,13 +81,15 @@ class AppSideBar extends React.Component {
                 title="New region"
                 iconProps={{ iconName: "Add" }}
                 onClick={() => this.onBasicClick(this.props.onAddSub)}
-                disabled={!this.props.data}
+                disabled={!this.props.data || this.props.disabled}
               />
               <IconButton
                 title="Delete selected region"
                 iconProps={{ iconName: "Remove" }}
                 onClick={() => this.onSelClick(this.props.onDeleteSub)}
-                disabled={this.state.selection.count == 0}
+                disabled={
+                  this.state.selection.count == 0 || this.props.disabled
+                }
               />
             </div>
             <div>
@@ -94,13 +97,17 @@ class AppSideBar extends React.Component {
                 title="Edit points of the selected region"
                 iconProps={{ iconName: "Edit" }}
                 onClick={() => this.onSelClick(this.props.onEditSub)}
-                disabled={this.state.selection.count != 1}
+                disabled={
+                  this.state.selection.count != 1 || this.props.disabled
+                }
               />
               <IconButton
                 title="Edit or view basic information of the selected region"
                 iconProps={{ iconName: "Info" }}
                 onClick={() => this.onSelClick(this.props.onInfoSub)}
-                disabled={this.state.selection.count != 1}
+                disabled={
+                  this.state.selection.count != 1 || this.props.disabled
+                }
               />
             </div>
           </div>
